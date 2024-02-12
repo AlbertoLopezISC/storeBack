@@ -45,6 +45,27 @@ namespace storeBack.Services.ArticulosCliente
             }
         }
 
+        public async Task DeleteByClientIdAsync(int clientId)
+        {
+            var relations = await _context.ArticuloCliente
+                .Where(ac => ac.ClienteId == clientId)
+                .ToListAsync();
+            if (relations != null && relations.Any())
+            {
+                _context.ArticuloCliente.RemoveRange(relations);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<ArticuloCliente>> GetByClientIdAsync(int clientId)
+        {
+            var relations = await _context.ArticuloCliente
+                .Include(ac => ac.Articulo)
+                .Where(ac => ac.ClienteId == clientId)
+                .ToListAsync();
+            return relations;
+        }
+
         public async Task<TableResponse<ArticuloClienteTableDto>> getAllAsync(int offset, int limit)
         {
             var total = await _context.ArticuloCliente.CountAsync();
@@ -77,7 +98,8 @@ namespace storeBack.Services.ArticulosCliente
             {
                 Id = ac.Id,
                 ArticuloId = ac.ArticuloId,
-                ClienteId = ac.ClienteId
+                ClienteId = ac.ClienteId,
+                Cantidad = ac.Cantidad
             }).FirstOrDefaultAsync(ac => ac.Id == id);
             return relation;
         }
@@ -88,6 +110,7 @@ namespace storeBack.Services.ArticulosCliente
 
             relationInfo.ClienteId = relation.ClienteId;
             relationInfo.ArticuloId = relation.ArticuloId;
+            relationInfo.Cantidad = relation.Cantidad;
 
             await _context.SaveChangesAsync();
         }

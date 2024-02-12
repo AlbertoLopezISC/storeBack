@@ -89,5 +89,17 @@ namespace storeBack.Services.Cliente
 
             return clientDto;
         }
+
+        public async Task<Models.Cliente> getClientByEmailAsync(string email)
+        {
+            var client = await _context.Cliente.FirstOrDefaultAsync(c => c.Email == email);
+
+            if (client == null)
+            {
+                return null;
+            }
+            return client;
+        }
+
     }
 }

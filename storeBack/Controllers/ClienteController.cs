@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using storeBack.Services.Cliente;
-using System.Security.Claims;
 
 namespace storeBack.Controllers
 {

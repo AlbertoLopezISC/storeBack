@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using storeBack.Models;
+using storeBack.Services.Auth;
+using storeBack.Services.Cliente;
 using storeBack.ViewModels;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,13 +16,13 @@ namespace storeBack.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IConfiguration _configuration;
+        private readonly IAuthService _authService;
+        private readonly IClienteService _clienteService;
 
-        public AuthController(ApplicationDbContext context, IConfiguration configuration)
+        public AuthController(IAuthService authService, IClienteService clienteService)
         {
-            _context = context;
-            _configuration = configuration;
+            _authService = authService;
+            _clienteService = clienteService;
         }
 
         [HttpPost]
@@ -28,12 +30,14 @@ namespace storeBack.Controllers
         {
             try
             {
-                var user = await _context.Cliente.FirstOrDefaultAsync(c => c.Email == credential.Email);
+                var user = await _clienteService.getClientByEmailAsync(credential.Email);
+                ClienteDto clienteDto = new ClienteDto { Id = user.Id, Nombre = user.Nombre, Apellidos = user.Apellidos, Direccion = user.Direccion, Email = user.Email };
                 if (user != null && user.Contraseña == credential.Password)
                 {
                     return Ok(new
                     {
-                        token = GenerateToken(user)
+                        token = _authService.GenerateToken(clienteDto),
+                        user = clienteDto,
                     });
                 }
                 else
@@ -49,24 +53,24 @@ namespace storeBack.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] string oldToken)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenModel data)
         {
 
             try
             {
-                var principal = GetPrincipalFromToken(oldToken);
+                var principal = _authService.GetPrincipalFromToken(data.OldToken);
                 if (principal == null)
                 {
                     return BadRequest("Invalid token");
                 }
                 var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier).Value);
-                var user = await _context.Cliente.FirstOrDefaultAsync(c => c.Id == userId);
+                var user = await _clienteService.getClientByIdAsync(userId);
                 if (user != null)
                 {
                     return Ok(new
                     {
-                        oldToken = oldToken,
-                        newToken = GenerateToken(user)
+                        oldToken = data.OldToken,
+                        newToken = _authService.GenerateToken(user)
                     });
                 }
                 return BadRequest("Invalid token");
@@ -78,57 +82,28 @@ namespace storeBack.Controllers
             }
         }
 
-        private string GenerateToken(Cliente user)
+        [HttpPost("validate-token")]
+        public async Task<IActionResult> ValidateToken([FromBody] AuthValidateTokenModel data)
         {
-            var claims = new[]
+            var principal = _authService.GetPrincipalFromToken(data.Token);
+            if (principal == null)
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            };
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                return BadRequest(new
+                {
+                    ValidToken = false
+                });
+            }
+            else
+            {
+                return Ok(new
+                {
+                    ValidToken = true
+                });
+            }
 
-            var token = new JwtSecurityToken(
-                issuer: "MyApp",
-                expires: DateTime.UtcNow.AddMinutes(30),
-                claims: claims,
-                signingCredentials: creds,
-                audience: "MyApp"
-                );
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private ClaimsPrincipal GetPrincipalFromToken(string token)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!));
 
-            try
-            {
-                var tokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = key,
-                    ValidAudience = "MyApp",
-                    ValidIssuer = "MyApp",
-                    ValidateLifetime = false
-                };
 
-                SecurityToken securityToken;
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
-                JwtSecurityToken? jwtSecurityToken = securityToken as JwtSecurityToken;
-
-                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    throw new SecurityTokenException("Token inválido");
-                }
-
-                return principal;
-
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
-        }
     }
 }

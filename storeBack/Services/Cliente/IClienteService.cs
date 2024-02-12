@@ -7,6 +7,7 @@ namespace storeBack.Services.Cliente
     {
         Task<TableResponse<ClienteDto>> getAllClientsAsync(int offset, int limit);
         Task<ClienteDto> getClientByIdAsync(int id);
+        Task<Models.Cliente> getClientByEmailAsync(string email);
         Task CreateClientAsync(Models.Cliente cliente);
         Task UpdateClientAsync(int id, UpdateClienteDto cliente);
         Task DeleteClientAsync(int id);

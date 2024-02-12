@@ -6,6 +6,7 @@ using storeBack;
 using storeBack.Services.Articulos;
 using storeBack.Services.ArticulosCliente;
 using storeBack.Services.ArticulosTienda;
+using storeBack.Services.Auth;
 using storeBack.Services.Cliente;
 using storeBack.Services.ShoppingCart;
 using storeBack.Services.Tienda;
@@ -77,6 +78,7 @@ builder.Services.AddScoped<IArticuloService, storeBack.Services.Articulos.Articu
 builder.Services.AddScoped<IArticuloClienteService, storeBack.Services.ArticulosCliente.ArticuloClienteService>();
 builder.Services.AddScoped<IArticuloTiendaService, storeBack.Services.ArticulosTienda.ArticuloTiendaService>();
 builder.Services.AddScoped<IShoppingCartService, storeBack.Services.ShoppingCart.ShoppingCartService>();
+builder.Services.AddScoped<IAuthService, storeBack.Services.Auth.AuthService>();
 
 var app = builder.Build();
 
