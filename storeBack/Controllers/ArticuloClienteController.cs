@@ -62,8 +62,21 @@ namespace storeBack.Controllers
                 });
             }
 
-            var data = await _service.CreateAsync(relation);
-            return CreatedAtAction(nameof(GetById), new { id = data.Id }, relation);
+            try
+            {
+                var data = await _service.CreateAsync(relation);
+                return CreatedAtAction(nameof(GetById), new { id = data.Id }, relation);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Status = 400,
+                    Message = ex.Message
+                });
+            }
+
+            
 
         }
 

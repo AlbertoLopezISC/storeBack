@@ -59,7 +59,17 @@ namespace storeBack.Controllers
 
             if (article.AgregarFlag)
             {
-                return Ok(await _shoppingCartService.addShopingCartItem(userId, article));
+                    try
+                    {
+                        return Ok(await _shoppingCartService.addShopingCartItem(userId, article));
+                    }catch (Exception ex)
+                    {
+                        return BadRequest(new
+                        {
+                            Status = 400,
+                            Message = ex.Message
+                        });
+                    }
             }
 
             return Ok(await _shoppingCartService.removeShopingCartItem(userId, article));

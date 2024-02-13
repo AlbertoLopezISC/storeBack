@@ -16,6 +16,11 @@ namespace storeBack.Services.ArticulosCliente
 
             var relationInfo = _context.ArticuloCliente
                 .FirstOrDefault(ac => ac.ArticuloId == relation.ArticuloId && ac.ClienteId == relation.ClienteId);
+            var articulo = _context.Articulos.Find(relation.ArticuloId);
+
+            if ((relation.Cantidad + relation?.Cantidad ?? 0) > articulo.Stock) {
+                throw new InvalidOperationException($"No hay suficiente stock disponible para el artículo con ID {articulo.Id}");
+            }
 
             if(relationInfo != null)
             {
@@ -80,6 +85,7 @@ namespace storeBack.Services.ArticulosCliente
                     Id = ac.Id,
                     ClienteId = ac.ClienteId,
                     ArticuloId = ac.ArticuloId,
+                    Cantidad = ac.Cantidad,
                 })
                 .ToListAsync();
 
